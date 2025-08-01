@@ -11,6 +11,10 @@
       "src": "/api/chat",
       "methods": ["POST"],
       "dest": "api/chat.js"
+    },
+    {
+      "src": "/",
+      "dest": "/index.html"
     }
   ]
 }
