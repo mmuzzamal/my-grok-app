@@ -10,6 +10,13 @@ const notificationDot = document.getElementById('notificationDot');
 let isOpen = false;
 let isFirstMessage = true;
 
+// Notify parent window about chat state (for iframe resizing)
+function notifyParent(chatOpen) {
+    if (window.parent !== window) {
+        window.parent.postMessage({ chatOpen }, '*');
+    }
+}
+
 // Toggle chat
 chatButton.addEventListener('click', () => {
     isOpen = !isOpen;
@@ -19,9 +26,11 @@ chatButton.addEventListener('click', () => {
         chatButton.classList.add('active');
         notificationDot.style.display = 'none';
         messageInput.focus();
+        notifyParent(true);
     } else {
         chatContainer.classList.remove('active');
         chatButton.classList.remove('active');
+        notifyParent(false);
     }
 });
 
@@ -128,3 +137,9 @@ messageInput.addEventListener('keypress', (e) => {
 setTimeout(() => {
     notificationDot.style.display = 'none';
 }, 3000);
+
+// Ensure iframe can receive pointer events
+if (window.parent !== window) {
+    document.body.style.pointerEvents = 'none';
+    document.querySelector('.widget-wrapper').style.pointerEvents = 'all';
+}
