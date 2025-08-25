@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Assistant</title>
+    <title>Chat Widget</title>
     <style>
         * {
             margin: 0;
@@ -11,21 +11,31 @@
             box-sizing: border-box;
         }
 
-        body {
+        /* IMPORTANT: Transparent background for iframe embedding */
+        html, body {
+            background: transparent !important;
+            overflow: hidden;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            position: relative;
+            /* No height or width constraints - let iframe control it */
+        }
+
+        /* Widget Container - Fixed positioning within iframe */
+        .widget-wrapper {
+            position: fixed;
+            bottom: 0;
+            right: 0;
+            z-index: 2147483647; /* Maximum z-index */
+            pointer-events: none; /* Allow clicks to pass through empty areas */
         }
 
         /* Chat Button */
         .chat-button {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            width: 64px;
-            height: 64px;
-            border-radius: 32px;
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            border-radius: 30px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             box-shadow: 0 4px 24px rgba(102, 126, 234, 0.4);
             cursor: pointer;
@@ -33,9 +43,9 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 9999;
             border: none;
             outline: none;
+            pointer-events: all; /* Re-enable clicks for button */
         }
 
         .chat-button:hover {
@@ -48,8 +58,8 @@
         }
 
         .chat-button svg {
-            width: 30px;
-            height: 30px;
+            width: 28px;
+            height: 28px;
             fill: white;
             transition: all 0.3s ease;
         }
@@ -61,8 +71,8 @@
 
         .chat-button .close-icon {
             position: absolute;
-            width: 24px;
-            height: 24px;
+            width: 22px;
+            height: 22px;
             fill: white;
             opacity: 0;
             transform: rotate(-90deg);
@@ -77,12 +87,13 @@
         /* Notification Dot */
         .notification-dot {
             position: absolute;
-            top: 8px;
-            right: 8px;
+            top: 6px;
+            right: 6px;
             width: 12px;
             height: 12px;
             background: #ef4444;
             border-radius: 50%;
+            border: 2px solid white;
             animation: pulse 2s infinite;
         }
 
@@ -100,17 +111,17 @@
 
         /* Chat Container */
         .chat-container {
-            position: fixed;
-            bottom: 100px;
-            right: 24px;
+            position: absolute;
+            bottom: 90px;
+            right: 20px;
             width: 380px;
             height: 600px;
+            max-height: calc(100vh - 120px);
             background: white;
             border-radius: 16px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
             display: flex;
             flex-direction: column;
-            z-index: 9998;
             opacity: 0;
             transform: translateY(20px) scale(0.95);
             pointer-events: none;
@@ -127,16 +138,17 @@
         .chat-header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 20px;
+            padding: 18px;
             border-radius: 16px 16px 0 0;
             display: flex;
             align-items: center;
             gap: 12px;
+            flex-shrink: 0;
         }
 
         .avatar {
-            width: 40px;
-            height: 40px;
+            width: 38px;
+            height: 38px;
             background: rgba(255, 255, 255, 0.2);
             border-radius: 50%;
             display: flex;
@@ -150,7 +162,7 @@
         }
 
         .chat-header-title {
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 600;
             margin-bottom: 2px;
         }
@@ -168,7 +180,6 @@
             height: 8px;
             background: #10b981;
             border-radius: 50%;
-            animation: pulse 2s infinite;
         }
 
         /* Messages Area */
@@ -177,7 +188,7 @@
             overflow-y: auto;
             padding: 20px;
             background: #f9fafb;
-            scroll-behavior: smooth;
+            min-height: 0;
         }
 
         .messages-area::-webkit-scrollbar {
@@ -213,7 +224,7 @@
 
         /* Messages */
         .message {
-            margin-bottom: 16px;
+            margin-bottom: 14px;
             animation: messageSlide 0.3s ease-out;
         }
 
@@ -230,8 +241,8 @@
 
         .message-bubble {
             max-width: 75%;
-            padding: 12px 16px;
-            border-radius: 18px;
+            padding: 10px 14px;
+            border-radius: 16px;
             font-size: 14px;
             line-height: 1.5;
             word-wrap: break-word;
@@ -268,7 +279,7 @@
             padding: 12px 16px;
             background: white;
             border: 1px solid #e5e7eb;
-            border-radius: 18px;
+            border-radius: 16px;
             border-bottom-left-radius: 4px;
             max-width: 60px;
         }
@@ -300,10 +311,11 @@
 
         /* Input Area */
         .input-area {
-            padding: 16px;
+            padding: 14px;
             background: white;
             border-top: 1px solid #e5e7eb;
             border-radius: 0 0 16px 16px;
+            flex-shrink: 0;
         }
 
         .input-container {
@@ -312,7 +324,7 @@
             gap: 8px;
             background: #f3f4f6;
             border-radius: 24px;
-            padding: 4px 4px 4px 16px;
+            padding: 4px 4px 4px 14px;
             transition: all 0.3s ease;
         }
 
@@ -335,8 +347,8 @@
         }
 
         .send-button {
-            width: 36px;
-            height: 36px;
+            width: 34px;
+            height: 34px;
             border-radius: 50%;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border: none;
@@ -346,6 +358,7 @@
             justify-content: center;
             transition: all 0.3s ease;
             outline: none;
+            flex-shrink: 0;
         }
 
         .send-button:hover:not(:disabled) {
@@ -358,8 +371,8 @@
         }
 
         .send-button svg {
-            width: 18px;
-            height: 18px;
+            width: 16px;
+            height: 16px;
             fill: white;
             margin-left: 2px;
         }
@@ -367,66 +380,63 @@
         /* Mobile Responsive */
         @media (max-width: 480px) {
             .chat-container {
-                width: calc(100vw - 20px);
-                height: calc(100vh - 100px);
-                right: 10px;
+                width: calc(100vw - 40px);
+                height: calc(100vh - 120px);
                 bottom: 80px;
-            }
-
-            .chat-button {
-                bottom: 16px;
-                right: 16px;
             }
         }
     </style>
 </head>
 <body>
-    <!-- Chat Button -->
-    <button class="chat-button" id="chatButton">
-        <span class="notification-dot" id="notificationDot"></span>
-        <svg viewBox="0 0 24 24">
-            <path d="M12 2C6.48 2 2 6.48 2 12c0 1.54.36 3 .97 4.29L1 23l6.71-1.97C9 21.64 10.46 22 12 22c5.52 0 10-4.48 10-10s-4.48-10-10-10zm0 18c-1.41 0-2.73-.36-3.88-.99l-.28-.15-2.89.85.85-2.89-.15-.28C5.36 14.73 5 13.41 5 12c0-3.86 3.14-7 7-7s7 3.14 7 7-3.14 7-7 7z"/>
-            <path d="M7 9h10v2H7zm0 3h7v2H7z"/>
-        </svg>
-        <svg class="close-icon" viewBox="0 0 24 24">
-            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-        </svg>
-    </button>
+    <!-- Widget Wrapper -->
+    <div class="widget-wrapper">
+        <!-- Chat Button -->
+        <button class="chat-button" id="chatButton">
+            <span class="notification-dot" id="notificationDot"></span>
+            <svg viewBox="0 0 24 24">
+                <path d="M12 2C6.48 2 2 6.48 2 12c0 1.54.36 3 .97 4.29L1 23l6.71-1.97C9 21.64 10.46 22 12 22c5.52 0 10-4.48 10-10s-4.48-10-10-10zm0 18c-1.41 0-2.73-.36-3.88-.99l-.28-.15-2.89.85.85-2.89-.15-.28C5.36 14.73 5 13.41 5 12c0-3.86 3.14-7 7-7s7 3.14 7 7-3.14 7-7 7z"/>
+                <path d="M7 9h10v2H7zm0 3h7v2H7z"/>
+            </svg>
+            <svg class="close-icon" viewBox="0 0 24 24">
+                <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+            </svg>
+        </button>
 
-    <!-- Chat Container -->
-    <div class="chat-container" id="chatContainer">
-        <div class="chat-header">
-            <div class="avatar">🤖</div>
-            <div class="chat-header-info">
-                <div class="chat-header-title">AI Assistant</div>
-                <div class="chat-header-status">
-                    <span class="status-dot"></span>
-                    <span>Online</span>
+        <!-- Chat Container -->
+        <div class="chat-container" id="chatContainer">
+            <div class="chat-header">
+                <div class="avatar">🤖</div>
+                <div class="chat-header-info">
+                    <div class="chat-header-title">AI Assistant</div>
+                    <div class="chat-header-status">
+                        <span class="status-dot"></span>
+                        <span>Online</span>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div class="messages-area" id="messagesArea">
-            <div class="welcome-message">
-                <h3>👋 Welcome!</h3>
-                <p>I'm your AI assistant. How can I help you today?</p>
+            <div class="messages-area" id="messagesArea">
+                <div class="welcome-message">
+                    <h3>👋 Welcome!</h3>
+                    <p>I'm your AI assistant. How can I help you today?</p>
+                </div>
             </div>
-        </div>
 
-        <div class="input-area">
-            <div class="input-container">
-                <input 
-                    type="text" 
-                    class="message-input" 
-                    id="messageInput"
-                    placeholder="Type your message..."
-                    autocomplete="off"
-                >
-                <button class="send-button" id="sendButton" disabled>
-                    <svg viewBox="0 0 24 24">
-                        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
-                    </svg>
-                </button>
+            <div class="input-area">
+                <div class="input-container">
+                    <input 
+                        type="text" 
+                        class="message-input" 
+                        id="messageInput"
+                        placeholder="Type your message..."
+                        autocomplete="off"
+                    >
+                    <button class="send-button" id="sendButton" disabled>
+                        <svg viewBox="0 0 24 24">
+                            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                        </svg>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
